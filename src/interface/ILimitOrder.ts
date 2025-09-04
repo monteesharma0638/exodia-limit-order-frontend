@@ -1,5 +1,6 @@
 import type { AddressLike } from "ethers";
-import type { IOrderBookSupabaseResponse } from "./ISupabase";
+import type { IGetOrdersForAssetsFuncResponse } from "./ISupabase";
+import type { IERC20 } from "./IERC20";
 
 export interface IOrder {
     salt: bigint;
@@ -7,13 +8,13 @@ export interface IOrder {
     receiver: AddressLike;
     makerAsset: AddressLike;
     takerAsset: AddressLike;
-    makingAmount: number;
-    takingAmount: number;
+    makingAmount: string | bigint;
+    takingAmount: string | bigint;
     makerTraits: string | bigint;
     extension: string;
 }
 
 export interface IOrderBookArgs {
-    buyOrders?: IOrderBookSupabaseResponse[],
-    sellOrders?: IOrderBookSupabaseResponse[]
+    buyOrders?: IGetOrdersForAssetsFuncResponse[],
+    sellOrders?: IGetOrdersForAssetsFuncResponse[]
 }

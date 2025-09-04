@@ -1,4 +1,4 @@
-import { keccak256, solidityPacked } from "ethers";
+import { AbiCoder, ethers, keccak256, solidityPacked } from "ethers";
 import type { IOrder } from "../interface/ILimitOrder";
 import crypto from "crypto";
 
@@ -16,7 +16,7 @@ const constants = {
     ZERO_BYTES32: "0x0000000000000000000000000000000000000000000000000000000000000000",
 };
 
-const Order = [
+export const Order = [
     { name: 'salt', type: 'uint256' },
     { name: 'maker', type: 'address' },
     { name: 'receiver', type: 'address' },
@@ -67,6 +67,7 @@ function setn (num: any, bit: any, value: any) {
     }
 }
 
+
 export function buildTakerTraits ({
     makingAmount = false,
     unwrapWeth = false,
@@ -90,8 +91,12 @@ export function buildTakerTraits ({
         args: solidityPacked(
             ['bytes', 'bytes', 'bytes'],
             [target, extension, interaction],
-        ),
+        ) as `0x${string}`,
     };
+}
+
+export function fillWithMakingAmount (amount: string) {
+    return BigInt(amount) | BigInt(buildTakerTraits({ makingAmount: true }).traits);
 }
 
 export function buildMakerTraits ({

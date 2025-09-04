@@ -1,8 +1,11 @@
-import {  Box, Grid, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
+import {  Box, colors, Grid, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 import styled from "styled-components";
 import type { IOrderBookArgs } from "../interface/ILimitOrder";
-import type { IOrderBookSupabaseResponse } from "../interface/ISupabase";
+import type { IGetOrdersForAssetsFuncResponse, IOrderBookSupabaseResponse } from "../interface/ISupabase";
 import Loading from "./Loading";
+import React from "react";
+import { OrdersContext } from "../pages/Orders";
+import { formatUnits } from "viem";
 
 const StyledTypo = styled(Typography)({
 	textAlign: "center"
@@ -10,30 +13,53 @@ const StyledTypo = styled(Typography)({
 
 interface IOrdersTable {
 	type: "buy" | "sell",
-	fields: IOrderBookSupabaseResponse[]
+	fields: IGetOrdersForAssetsFuncResponse[]
 }
 
 const OrdersTable = ({ type, fields }: IOrdersTable) => {
+	const {makerToken: maker, takerToken: taker} = React.useContext(OrdersContext);
+	// let maker, taker;
+	// if(type === "sell") {
+	// 	maker = makerToken;
+	// 	taker = takerToken;
+	// }
+	// else {
+	// 	maker = takerToken;
+	// 	taker = makerToken;
+	// }
 	return (
 		<>
-			<StyledTypo color={type === "buy" ? "green" : "red"}>
+			<StyledTypo color={type === "buy" ? "green" : colors.red[900]}>
 				{type === "buy" ? "Buy Orders" : "Sell Orders"}
 			</StyledTypo>
 			<Table>
 				<TableHead>
 					<TableRow>
-						<TableCell>Volume</TableCell>
-						<TableCell sx={{ textAlign: "end" }}>Price</TableCell>
+						<TableCell>Volume ({maker?.symbol})</TableCell>
+						<TableCell sx={{ textAlign: "end" }}>Price ({maker?.symbol}/{taker?.symbol})</TableCell>
 					</TableRow>
 				</TableHead>
 				<TableBody>
 					{
-						fields.map((field, i) => (
-							<TableRow key={field.orderHash + i}>
-								<TableCell>{field.makingAmount}</TableCell>
-								<TableCell sx={{ textAlign: "end" }}>{field.takingAmount}</TableCell>
-							</TableRow>
-						))
+						fields.map((field, i) => {
+							let makingAmount, price;
+							if (type === "sell") {
+								makingAmount = maker?.decimals ? formatUnits(BigInt(field.making_amount), Number(maker?.decimals)): "0";
+								price = field.price;
+							}
+							else {
+								makingAmount = maker?.decimals ? formatUnits(BigInt(field.taking_amount), Number(maker?.decimals)): "0";
+								const takingAmount = taker?.decimals ? formatUnits(BigInt(field.making_amount), Number(taker.decimals)): "0";
+								price = Number(makingAmount) / Number(takingAmount);
+							}
+							const filledPercentage = 100 - ((parseFloat(field.remaining_amount ?? field.making_amount) * 100) / parseFloat(field.making_amount));
+							
+							return (
+								<TableRow key={field.order_hash + i} sx={{backgroundImage: `linear-gradient(90deg, ${type === "sell"? colors.red[900]: colors.green[900]} ${Math.floor(filledPercentage)}%, black ${Math.floor(filledPercentage) + 2}%)`}}>
+									<TableCell>{makingAmount}</TableCell>
+									<TableCell sx={{ textAlign: "end" }}>{price}</TableCell>
+								</TableRow>
+							)})
 					}
 				</TableBody>
 			</Table>
@@ -42,10 +68,7 @@ const OrdersTable = ({ type, fields }: IOrdersTable) => {
 }
 
 
-const buyDemoFields = [["1.23", "2.12"], ["5.23", "4.12"], ["6.12", "6.75"], ["88.3", "112.2"]].map(v => ({ volume: v[0], price: v[1] }));
-const sellDemoFields = [["1.23", "2.12"], ["5.23", "4.12"], ["6.12", "6.75"], ["88.3", "112.2"]].map(v => ({ volume: v[0], price: v[1] }));
-
-export function OrderBook({buyOrders, sellOrders}: IOrderBookArgs) {
+export function OrderBook({ buyOrders, sellOrders }: IOrderBookArgs) {
 
 	return (
 		<Box bgcolor={"darkgray"} sx={{ minHeight: 600 }}>

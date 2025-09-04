@@ -6,38 +6,45 @@ import { useToken } from "wagmi";
 import { Navigate, useNavigate, useParams } from "react-router-dom";
 import { API_URL, APP_PATH, CHAIN_ID } from "../constants";
 import { useQuery } from "@tanstack/react-query";
-import type { IDexscreenerData } from "../interface/IERC20";
+import type { IDexscreenerData, IERC20 } from "../interface/IERC20";
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import OrderQueue from "../components/OrderQueue";
 import OrderHistory from "../components/OrderHistory";
 import { isAddress, zeroAddress } from "viem";
 import { getTargetPairBuyOrders, getTargetPairSellOrders } from "../helpers/supabase";
 import type { AddressLike } from "ethers";
+import React from "react";
 
+interface IOrderContext {
+	makerToken?: IERC20;
+	takerToken?: IERC20;
+}
+
+export const OrdersContext = React.createContext<IOrderContext>({});
 
 export default function Orders() {
 	const { makerAsset, takerAsset } = useParams();
 	const navigate = useNavigate();
 
-	const {data: makerToken, isError: isMakerAssetError, isLoading: isMakerLoading} = useToken({
+	const { data: makerToken, isError: isMakerAssetError, isLoading: isMakerLoading } = useToken({
 		chainId: CHAIN_ID,
 		address: makerAsset as `0x${string}`,
-	})
+	});
 
-	const {data: takerToken, isError: isTakerAssetError, isLoading: isTakerLoading} = useToken({
+	const { data: takerToken, isError: isTakerAssetError, isLoading: isTakerLoading } = useToken({
 		chainId: CHAIN_ID,
 		address: takerAsset as `0x${string}`
-	})
+	});
 
-	const {data: buyOrders} = useQuery({
+	const { data: buyOrders } = useQuery({
 		queryKey: ["buyOrders", makerAsset, takerAsset],
 		queryFn: () => getTargetPairBuyOrders(makerAsset ?? zeroAddress, takerAsset ?? zeroAddress),
-	})
+	});
 
-	const {data: sellOrders} = useQuery({
+	const { data: sellOrders } = useQuery({
 		queryKey: ["sellOrders", makerAsset, takerAsset],
 		queryFn: () => getTargetPairSellOrders(makerAsset ?? zeroAddress, takerAsset ?? zeroAddress),
-	})
+	});
 
 	const { data: tokenList } = useQuery<any, Error,IDexscreenerData[]>({
 		queryKey: ["list-tokens"], 
@@ -65,76 +72,81 @@ export default function Orders() {
 	}
 
 	return (
-		<Box minHeight={"100vh"}>
-			<AppBar position="static" sx={{display: "flex"}}>
-				<Box sx={{display: "flex", justifyContent: "space-between"}}>
-					<Box display={"flex"}>
-						<Autocomplete
-							options={tokenList ?? []}
-							getOptionDisabled={(option) =>
-								option.token_address == makerAsset || option.token_address == takerAsset
-							}
-							sx={{ width: 300 }}
-							onChange={(_, newValue) => newValue?.token_address && takerAsset && navigate(APP_PATH.getSwapPath(newValue.token_address, takerAsset))}
-							renderInput={(params) => <TextField {...params} label={makerToken.name} />}
-							getOptionLabel={(option) => option.metadata.name}
-							getOptionKey={(option) => option.token_address}
-							renderOption={(props, option) => {
-								const {key, ...otherProps} = props as any;
-								return <ListItemButton key={key} {...otherProps}>
-									<ListItemIcon>
-										<Avatar src={option.metadata.image} alt={"$"} />
-									</ListItemIcon>
-									<ListItemText primary={option.metadata.name} />
-								</ListItemButton>
-							}
-							}
-						/>
-						<IconButton onClick={() => takerAsset && makerAsset && navigate(APP_PATH.getSwapPath(takerAsset, makerAsset))}>
-							<Avatar>
-								<SwapHorizIcon />
-							</Avatar>
-						</IconButton>
-						<Autocomplete
-							options={tokenList ?? []}
-							getOptionDisabled={(option) =>
-								option.token_address == makerAsset || option.token_address == takerAsset
-							}
-							sx={{ width: 300 }}
-							onChange={(_, newValue) => newValue?.token_address && makerAsset && navigate(APP_PATH.getSwapPath(makerAsset, newValue.token_address))}
-							renderInput={(params) => <TextField {...params} label={takerToken.name} />}
-							getOptionLabel={(option) => option.metadata.name}
-							getOptionKey={(option) => option.token_address}
-							renderOption={(props, option) => {
-								const {key, ...otherProps} = props as any;
-								return <ListItemButton key={key} {...otherProps}>
-									<ListItemIcon>
-										<Avatar src={option.metadata.image} alt={"$"} />
-									</ListItemIcon>
-									<ListItemText primary={option.metadata.name} />
-								</ListItemButton>
-							}}
-						/>
+		<OrdersContext.Provider value={{
+			makerToken,
+			takerToken
+		}}>
+			<Box minHeight={"100vh"}>
+				<AppBar position="static" sx={{display: "flex"}}>
+					<Box sx={{display: "flex", justifyContent: "space-between"}}>
+						<Box display={"flex"}>
+							<Autocomplete
+								options={tokenList ?? []}
+								getOptionDisabled={(option) =>
+									option.token_address == makerAsset || option.token_address == takerAsset
+								}
+								sx={{ width: 300 }}
+								onChange={(_, newValue) => newValue?.token_address && takerAsset && navigate(APP_PATH.getSwapPath(newValue.token_address, takerAsset))}
+								renderInput={(params) => <TextField {...params} label={makerToken.name} />}
+								getOptionLabel={(option) => option.metadata.name}
+								getOptionKey={(option) => option.token_address}
+								renderOption={(props, option) => {
+									const {key, ...otherProps} = props as any;
+									return <ListItemButton key={key} {...otherProps}>
+										<ListItemIcon>
+											<Avatar src={option.metadata.image} alt={"$"} />
+										</ListItemIcon>
+										<ListItemText primary={option.metadata.name} />
+									</ListItemButton>
+								}
+								}
+							/>
+							<IconButton onClick={() => takerAsset && makerAsset && navigate(APP_PATH.getSwapPath(takerAsset, makerAsset))}>
+								<Avatar>
+									<SwapHorizIcon />
+								</Avatar>
+							</IconButton>
+							<Autocomplete
+								options={tokenList ?? []}
+								getOptionDisabled={(option) =>
+									option.token_address == makerAsset || option.token_address == takerAsset
+								}
+								sx={{ width: 300 }}
+								onChange={(_, newValue) => newValue?.token_address && makerAsset && navigate(APP_PATH.getSwapPath(makerAsset, newValue.token_address))}
+								renderInput={(params) => <TextField {...params} label={takerToken.name} />}
+								getOptionLabel={(option) => option.metadata.name}
+								getOptionKey={(option) => option.token_address}
+								renderOption={(props, option) => {
+									const {key, ...otherProps} = props as any;
+									return <ListItemButton key={key} {...otherProps}>
+										<ListItemIcon>
+											<Avatar src={option.metadata.image} alt={"$"} />
+										</ListItemIcon>
+										<ListItemText primary={option.metadata.name} />
+									</ListItemButton>
+								}}
+							/>
+						</Box>
+						<ConnectButton />
 					</Box>
-					<ConnectButton />
-				</Box>
-			</AppBar>
-			<Grid container>
-				<Grid size={{xs: 12, md: 8}}>
-					<OrderBook buyOrders={buyOrders} sellOrders={sellOrders} />
+				</AppBar>
+				<Grid container>
+					<Grid size={{xs: 12, md: 8}}>
+						<OrderBook buyOrders={buyOrders} sellOrders={sellOrders} />
+					</Grid>
+					<Grid size={{xs: 12, md: 4}}>
+						<PlaceOrder makerToken={makerToken} takerToken={takerToken} />
+					</Grid>
 				</Grid>
-				<Grid size={{xs: 12, md: 4}}>
-					<PlaceOrder makerToken={makerToken} takerToken={takerToken} />
+				<Grid container>
+					<Grid size={{xs:12, md: 6}}>
+						<OrderQueue />
+					</Grid>
+					<Grid size={{xs:12, md: 6}}>
+						<OrderHistory />
+					</Grid>
 				</Grid>
-			</Grid>
-			<Grid container>
-				<Grid size={{xs:12, md: 6}}>
-					<OrderQueue />
-				</Grid>
-				<Grid size={{xs:12, md: 6}}>
-					<OrderHistory />
-				</Grid>
-			</Grid>
-		</Box>
+			</Box>
+		</OrdersContext.Provider>
 	)
 }

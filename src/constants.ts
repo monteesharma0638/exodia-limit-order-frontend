@@ -1,4 +1,4 @@
-export const SWAP_ADDRESS = "0x582EEe4908A9D9b331B3fCb8fAEb04Bac79f248D";
+export const SWAP_ADDRESS = "0x39E4014F502Fd8465f2A747D430B657Fe08bf418";
 export const CHAIN_ID = 1337;
 
 export const API_URL = {

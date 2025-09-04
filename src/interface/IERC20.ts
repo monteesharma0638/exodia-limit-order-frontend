@@ -1,11 +1,11 @@
 type Address = `0x${string}`;
 
 export interface IERC20 {
-    name: string,
-    symbol: string,
-    decimals: Number,
-    address: Address,
-    totalSupply?: string,
+    name?: string,
+    symbol?: string,
+    decimals?: Number,
+    address?: Address,
+    totalSupply?: string | { formatted: string; value: bigint; },
     ticker?: string
 }
 
