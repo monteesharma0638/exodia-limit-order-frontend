@@ -56,5 +56,6 @@ export interface IOrderTransactionsFunctionResponse {
     takerasset: string,
     makingamount: string,
     takingamount: string,
-    remainingamount: string
+    remainingamount: string,
+    orderamount: string
 }

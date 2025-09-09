@@ -78,8 +78,8 @@ export default function PlaceOrder({makerToken, takerToken}: IPlaceOrderArgs) {
             if(!sellAmount || Number.isNaN(sellAmount)) throw new Error("Invalid sell amount");
             if(!client) throw new Error("Wallet client not found");
             if(!makerToken?.address) throw new Error("Input tokens is invalid");
-            const takingAmount = parseUnits(buyAmount, takerToken?.decimals);
-            const makingAmount = parseUnits(sellAmount, makerToken?.decimals);
+            const takingAmount = parseUnits(parseFloat(buyAmount).toFixed(takerToken?.decimals), takerToken?.decimals);
+            const makingAmount = parseUnits(parseFloat(sellAmount).toFixed(makerToken?.decimals), makerToken?.decimals);
             const balanceOf = await readContract(client, {
                 abi: erc20Abi,
                 address: makerToken.address as `0x${string}`,
@@ -119,6 +119,7 @@ export default function PlaceOrder({makerToken, takerToken}: IPlaceOrderArgs) {
             }
 
             const quotePrice = Number(buyAmount) / Number(sellAmount);
+            console.log("🚀 ~ PlaceOrder ~ quotePrice:", quotePrice)
             const order = makerAsset && takerAsset? await getProfitableTrade(client, makerAsset, takerAsset, takingAmount, quotePrice): null;
             console.log("🚀 ~ PlaceOrder ~ order:", order);
 
@@ -137,7 +138,7 @@ export default function PlaceOrder({makerToken, takerToken}: IPlaceOrderArgs) {
 
                 const takerTraits = buildTakerTraits({
                     // target: address,
-                    makingAmount: true
+                    makingAmount: false
                 })
                 
                 const {request} = await simulateContract(walletClient as any, {
@@ -148,7 +149,7 @@ export default function PlaceOrder({makerToken, takerToken}: IPlaceOrderArgs) {
                         formattedOrder as any, 
                         order.r, 
                         order.sv,
-                        takingAmount,
+                        makingAmount,
                         takerTraits.traits
                     ],
                     account: address
@@ -160,6 +161,8 @@ export default function PlaceOrder({makerToken, takerToken}: IPlaceOrderArgs) {
             }
             else {
                 const price = Number(sellAmount) / Number(buyAmount); 
+                console.log("🚀 ~ PlaceOrder ~ price:", price)
+                
                 const order = buildOrder({
                     makerAsset: makerToken?.address,
                     takerAsset: takerToken?.address,
@@ -198,13 +201,18 @@ export default function PlaceOrder({makerToken, takerToken}: IPlaceOrderArgs) {
                 confirmButtonColor: "green",
                 timer: 3000
             })
+            resetInputs();
             setTimeout(() => {
                 queryClient.refetchQueries(["buyOrders", "sellOrders"] as any)
             }, 2000)
         }
     })
 
-
+    const resetInputs = () => {
+        setTakeAmount("");
+        setSellAmount("");
+        setTakePrice("");
+    }
 
     const handleLegsChange: ChangeHandler = (e) => {
         const value = Number(e.target.value);

@@ -1,7 +1,7 @@
 import {  Box, colors, Grid, Table, TableBody, TableCell, TableHead, TableRow, Typography } from "@mui/material";
 import styled from "styled-components";
 import type { IOrderBookArgs } from "../interface/ILimitOrder";
-import type { IGetOrdersForAssetsFuncResponse, IOrderBookSupabaseResponse } from "../interface/ISupabase";
+import type { IGetOrdersForAssetsFuncResponse } from "../interface/ISupabase";
 import Loading from "./Loading";
 import React from "react";
 import { OrdersContext } from "../pages/Orders";
@@ -27,6 +27,7 @@ const OrdersTable = ({ type, fields }: IOrdersTable) => {
 	// 	maker = takerToken;
 	// 	taker = makerToken;
 	// }
+
 	return (
 		<>
 			<StyledTypo color={type === "buy" ? "green" : colors.red[900]}>
@@ -42,22 +43,25 @@ const OrdersTable = ({ type, fields }: IOrdersTable) => {
 				<TableBody>
 					{
 						fields.map((field, i) => {
+							const legs = field.legs;
 							let makingAmount, price;
 							if (type === "sell") {
 								makingAmount = maker?.decimals ? formatUnits(BigInt(field.making_amount), Number(maker?.decimals)): "0";
+								makingAmount = Number(makingAmount) / legs;
 								price = field.price;
 							}
 							else {
 								makingAmount = maker?.decimals ? formatUnits(BigInt(field.taking_amount), Number(maker?.decimals)): "0";
 								const takingAmount = taker?.decimals ? formatUnits(BigInt(field.making_amount), Number(taker.decimals)): "0";
 								price = Number(makingAmount) / Number(takingAmount);
+								makingAmount = Number(makingAmount) / legs;
 							}
 							const filledPercentage = 100 - ((parseFloat(field.remaining_amount ?? field.making_amount) * 100) / parseFloat(field.making_amount));
 							
 							return (
 								<TableRow key={field.order_hash + i} sx={{backgroundImage: `linear-gradient(90deg, ${type === "sell"? colors.red[900]: colors.green[900]} ${Math.floor(filledPercentage)}%, black ${Math.floor(filledPercentage) + 2}%)`}}>
-									<TableCell>{makingAmount}</TableCell>
-									<TableCell sx={{ textAlign: "end" }}>{price}</TableCell>
+									<TableCell>{makingAmount.toFixed(4)}</TableCell>
+									<TableCell sx={{ textAlign: "end" }}>{price.toFixed(2)}</TableCell>
 								</TableRow>
 							)})
 					}

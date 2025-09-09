@@ -42,15 +42,23 @@ export async function getProfitableTrade(client: Client<Transport, Chain | undef
         console.log("🚀 ~ getProfitableTrade ~ makerBalance:", makerBalance)
         console.log("🚀 ~ getProfitableTrade ~ allowance:", allowance)
         console.log("🚀 ~ getProfitableTrade ~ remainingAmount:", remainingAmount)
-        if(makerBalance < BigInt(order.makingAmount)) {
+        console.log("🚀 ~ getProfitableTrade ~ takingAmount:", takingAmount);
+        if(makerBalance < takingAmount) {
+            console.log("pass 1");
             continue;
         }
-
-        console.log("🚀 ~ getProfitableTrade ~ takingAmount:", takingAmount);
+        
+        // if(allowance < takingAmount) {
+        //     console.log("pass 2");
+        //     continue;
+        // }
+        
         console.log("🚀 ~ getProfitableTrade ~ order.makingAmount:", order.makingAmount);
-        if(remainingAmount >= takingAmount && allowance >= BigInt(order.makingAmount)) {
-            return order;
-        }
+        // if(remainingAmount < takingAmount) {
+        //     console.log("pass 3");
+        //     continue;
+        // }
+        return order;
     }
     return null;
 }

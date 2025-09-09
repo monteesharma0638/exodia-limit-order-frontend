@@ -10,7 +10,7 @@ export default function OrderHistory() {
 
     const { data: transactions } = useQuery({
         queryKey: ["recent-transactions", makerToken?.address, takerToken?.address],
-        queryFn: async () => makerToken?.address && takerToken?.address ? getCompletedOrders(makerToken.address, takerToken.address, 10): []
+        queryFn: async () => makerToken?.address && takerToken?.address ? await getCompletedOrders(makerToken.address, takerToken.address, 10): []
     });
     console.log("🚀 ~ OrderHistory ~ transactions:", transactions)
     
@@ -31,30 +31,32 @@ export default function OrderHistory() {
                     {
                         transactions?.map(txn => {
                             let type, makingAmount, takingAmount, orderAmount;
-                            const percentageSold = 100 - (parseFloat(txn.remainingamount)*100) / parseFloat(txn.makingamount);
+                            // const percentageSold = 100 - (parseFloat(txn.remainingamount)*100) / parseFloat(txn.makingamount);
                             if (txn.makerasset == makerToken?.address && txn.takerasset == takerToken?.address) {
                                 makingAmount = formatUnits(BigInt(txn.makingamount), Number(makerToken.decimals));
                                 takingAmount = formatUnits(BigInt(txn.takingamount), Number(takerToken.decimals));
-                                orderAmount = ((percentageSold/100) * parseFloat(makingAmount)).toString();
+                                orderAmount = formatUnits(BigInt(txn.orderamount), Number(makerToken?.decimals));
                                 type = "sell";
                             }
                             else if (txn.makerasset == takerToken?.address && txn.takerasset == makerToken?.address) {
                                 makingAmount = formatUnits(BigInt(txn.takingamount), Number(makerToken.decimals));
                                 takingAmount = formatUnits(BigInt(txn.makingamount), Number(takerToken.decimals));
-                                orderAmount = ((percentageSold * parseFloat(makingAmount)) / 100).toString();
+                                orderAmount = formatUnits(BigInt(txn.orderamount), Number(takerToken?.decimals));
+                                const price = Number(makingAmount) / Number(takingAmount);
+                                console.log("🚀 ~ price:", price);
+                                orderAmount = (Number(orderAmount) * price).toString();
                                 type = "buy";
                             }
                             else {
                                 return null;
                             }
 
-                            // const orderAmount = 0;
                             const price = Number(takingAmount) / Number(makingAmount);
 
                             return (
                                 <TableRow sx={{backgroundColor: type === "sell" ? colors.red[900]: colors.green[900]}}>
                                     <TableCell>{orderAmount}</TableCell>
-                                    <TableCell sx={{textAlign: "end"}}>{price}</TableCell>
+                                    <TableCell sx={{textAlign: "end"}}>{price.toFixed(2)}</TableCell>
                                 </TableRow>
                             )
                         })

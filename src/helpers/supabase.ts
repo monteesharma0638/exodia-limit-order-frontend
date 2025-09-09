@@ -71,14 +71,14 @@ export async function getTargetPairSellOrders(makerAsset: AddressLike, takerAsse
 
 export async function getProfitableBuyOrders(makerAsset: AddressLike, takerAsset: AddressLike, price: number, limit?: number) :Promise<IOrderBookSupabaseResponse[]> {
     let query = supabase.from("order_book").select("*").eq("makerAsset", takerAsset).eq("takerAsset", makerAsset).lte("price", price).eq("status", "PLACED").order("price", {
-        ascending: true
+        ascending: false
     });
 
     if(limit) {
         // add limit if available.
         query = query.limit(limit);
     }
-    const {data, error} = await query;
+    const { data, error } = await query;
     if(error) {
         throw new Error("unable to fetch orderbook");
     }
@@ -86,12 +86,8 @@ export async function getProfitableBuyOrders(makerAsset: AddressLike, takerAsset
 }
 
 export async function getCompletedOrders(makerAsset: `0x${string}`, takerAsset: `0x${string}`, limit?: number): Promise<IOrderTransactionsFunctionResponse[]> {
-    let query = supabase
-        .rpc("get_transactions_for_assets",{maker: "0x2FD872fa03d13ddE468b033090c147511E3C8EDa", taker: "0xBAb8244487420de6Ca0c8FBc5C96a38118f3Ab18"});
-    if(limit) {
-        query = query.limit(limit);
-    }
-    const {data, error} = await query;
+    const { data, error } = await supabase.rpc("get_transactions_for_assets",{ maker: makerAsset, taker: takerAsset });
+    
     if (error) {
         throw new Error("unable to fetch orderbook");
     }
