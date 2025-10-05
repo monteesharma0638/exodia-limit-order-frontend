@@ -202,9 +202,9 @@ export default function PlaceOrder({makerToken, takerToken}: IPlaceOrderArgs) {
                 timer: 3000
             })
             resetInputs();
-            setTimeout(() => {
-                queryClient.refetchQueries(["buyOrders", "sellOrders"] as any)
-            }, 2000)
+            // setTimeout(() => {
+            //     queryClient.refetchQueries(["buyOrders", "sellOrders"] as any)
+            // }, 2000)
         }
     })
 

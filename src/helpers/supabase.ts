@@ -87,6 +87,7 @@ export async function getProfitableBuyOrders(makerAsset: AddressLike, takerAsset
 
 export async function getCompletedOrders(makerAsset: `0x${string}`, takerAsset: `0x${string}`, limit?: number): Promise<IOrderTransactionsFunctionResponse[]> {
     const { data, error } = await supabase.rpc("get_transactions_for_assets",{ maker: makerAsset, taker: takerAsset });
+    console.log("🚀 ~ getCompletedOrders ~ data:", data)
     
     if (error) {
         throw new Error("unable to fetch orderbook");

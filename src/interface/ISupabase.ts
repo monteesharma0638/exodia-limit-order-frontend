@@ -59,3 +59,11 @@ export interface IOrderTransactionsFunctionResponse {
     remainingamount: string,
     orderamount: string
 }
+
+export interface IOrderTransactionsTableData {
+    id: number,
+    orderHash: string,
+    transactionHash: string,
+    remainingAmount: string,
+    orderAmount: string
+}

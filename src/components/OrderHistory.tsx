@@ -5,14 +5,8 @@ import { useQuery } from "@tanstack/react-query";
 import { getCompletedOrders } from "../helpers/supabase";
 import { formatUnits } from "viem";
 
-export default function OrderHistory() {
+export default function OrderHistory({transactions}: {transactions: any[]}) {
     const {makerToken, takerToken} = React.useContext(OrdersContext);
-
-    const { data: transactions } = useQuery({
-        queryKey: ["recent-transactions", makerToken?.address, takerToken?.address],
-        queryFn: async () => makerToken?.address && takerToken?.address ? await getCompletedOrders(makerToken.address, takerToken.address, 10): []
-    });
-    console.log("🚀 ~ OrderHistory ~ transactions:", transactions)
     
     return (
         <Box height={400} bgcolor={colors.cyan[100]}>

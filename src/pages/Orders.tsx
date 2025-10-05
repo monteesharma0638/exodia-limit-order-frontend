@@ -1,19 +1,21 @@
-import { AppBar, Autocomplete, Avatar, Box, CircularProgress, Grid, IconButton, ListItem, ListItemButton, ListItemIcon, ListItemText, MenuItem, Paper, TextField, Typography } from "@mui/material";
+import { AppBar, Autocomplete, Avatar, Box, CircularProgress, Grid, IconButton, ListItemButton, ListItemIcon, ListItemText, Paper, TextField, Typography } from "@mui/material";
 import { OrderBook } from "../components/OrderBook";
 import PlaceOrder from "../components/PlaceOrder";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
 import { useToken } from "wagmi";
-import { Navigate, useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { API_URL, APP_PATH, CHAIN_ID } from "../constants";
 import { useQuery } from "@tanstack/react-query";
 import type { IDexscreenerData, IERC20 } from "../interface/IERC20";
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import OrderQueue from "../components/OrderQueue";
 import OrderHistory from "../components/OrderHistory";
-import { isAddress, zeroAddress } from "viem";
-import { getTargetPairBuyOrders, getTargetPairSellOrders } from "../helpers/supabase";
-import type { AddressLike } from "ethers";
-import React from "react";
+import { zeroAddress } from "viem";
+import { getCompletedOrders, getTargetPairBuyOrders, getTargetPairSellOrders } from "../helpers/supabase";
+import React, { useMemo } from "react";
+import { useRealtimeOrders, useRealtimeTransactions } from "../hooks/useRealtime";
+import { formatOrderTypes, formatTransactionData } from "../helpers/formatters";
+import NavBar from "../components/navigation/NavBar";
 
 interface IOrderContext {
 	makerToken?: IERC20;
@@ -24,6 +26,7 @@ export const OrdersContext = React.createContext<IOrderContext>({});
 
 export default function Orders() {
 	const { makerAsset, takerAsset } = useParams();
+
 	const navigate = useNavigate();
 
 	const { data: makerToken, isError: isMakerAssetError, isLoading: isMakerLoading } = useToken({
@@ -36,20 +39,80 @@ export default function Orders() {
 		address: takerAsset as `0x${string}`
 	});
 
-	const { data: buyOrders } = useQuery({
+	const { data: buyOrdersHttp } = useQuery({
 		queryKey: ["buyOrders", makerAsset, takerAsset],
 		queryFn: () => getTargetPairBuyOrders(makerAsset ?? zeroAddress, takerAsset ?? zeroAddress),
 	});
 
-	const { data: sellOrders } = useQuery({
+	const { data: sellOrdersHttp } = useQuery({
 		queryKey: ["sellOrders", makerAsset, takerAsset],
 		queryFn: () => getTargetPairSellOrders(makerAsset ?? zeroAddress, takerAsset ?? zeroAddress),
 	});
 
 	const { data: tokenList } = useQuery<any, Error,IDexscreenerData[]>({
-		queryKey: ["list-tokens"], 
-		queryFn:  () => fetch(API_URL.LIST_TOKENS).then(res => res.json()) 
+		queryKey: ["list-tokens"],
+		queryFn:  () => fetch(API_URL.LIST_TOKENS).then(res => res.json())
 	});
+
+    const { data: transactionsHttp } = useQuery({
+        queryKey: ["recent-transactions", makerToken?.address, takerToken?.address],
+        queryFn: async () => makerToken?.address && takerToken?.address ? await getCompletedOrders(makerToken.address, takerToken.address, 10): [],
+		refetchOnWindowFocus: false
+    });
+
+	const { realtimeTransactions } = useRealtimeTransactions();
+	const { realtimeBuyOrders, realtimeSellOrders } = useRealtimeOrders({makerAsset: makerAsset ?? "", takerAsset: takerAsset ?? ""});
+	
+	const buyOrders = useMemo(() => {
+		let totalOrders;
+		const formattedRealTimeOrders = formatOrderTypes(realtimeBuyOrders)
+		if(buyOrdersHttp && buyOrdersHttp?.length) {
+			totalOrders = [...buyOrdersHttp, ...formattedRealTimeOrders];
+		}
+		else {
+			totalOrders = formattedRealTimeOrders;
+		}
+
+		return totalOrders.sort((a, b) => b.price - a.price);
+	}, [buyOrdersHttp, realtimeBuyOrders]);
+
+	const sellOrders = useMemo(() => {
+		let totalOrders;
+		const formattedRealTimeOrders = formatOrderTypes(realtimeSellOrders)
+
+		if (sellOrdersHttp && sellOrdersHttp?.length) {
+			totalOrders = [...sellOrdersHttp, ...formattedRealTimeOrders];
+		}
+		else {
+			totalOrders = formattedRealTimeOrders;
+		}
+
+		return totalOrders.sort((a, b) => a.price - b.price);
+	}, [sellOrdersHttp, realtimeSellOrders]);
+
+
+	const transactions = useMemo(() => {
+		let totalTransactions;
+
+		const filteredRealtimeTransactions = realtimeTransactions.map(txn => {
+			const order = buyOrders.find(order => order.order_hash === txn.orderHash) || sellOrders.find(order => order.order_hash === txn.orderHash);
+			if(order) {
+				return formatTransactionData(txn, order.maker_asset, order.taker_asset, order.making_amount, order.taking_amount);
+			}
+			else {
+				return null;
+			}
+		}).filter(txn => txn !== null);
+
+		if(transactionsHttp && transactionsHttp?.length) {
+			totalTransactions = [...filteredRealtimeTransactions, ...transactionsHttp];
+		}
+		else {
+			totalTransactions = filteredRealtimeTransactions;
+		}
+
+		return totalTransactions;
+	}, [transactionsHttp, realtimeTransactions])
 	
 	if(isMakerLoading || isTakerLoading) {
 		return (
@@ -59,6 +122,7 @@ export default function Orders() {
 		)
 	}
 
+	
 	if (isMakerAssetError || isTakerAssetError || !takerToken || !makerToken) {
 		return (
 			<Box bgcolor={(theme) => theme.palette.background.paper} display={"flex"} justifyContent={"center"} height={"100vh"} alignItems={"center"}>
@@ -70,6 +134,7 @@ export default function Orders() {
 			</Box>
 		)
 	}
+	
 
 	return (
 		<OrdersContext.Provider value={{
@@ -77,6 +142,7 @@ export default function Orders() {
 			takerToken
 		}}>
 			<Box minHeight={"100vh"}>
+				<NavBar />
 				<AppBar position="static" sx={{display: "flex"}}>
 					<Box sx={{display: "flex", justifyContent: "space-between"}}>
 						<Box display={"flex"}>
@@ -143,7 +209,7 @@ export default function Orders() {
 						<OrderQueue />
 					</Grid>
 					<Grid size={{xs:12, md: 6}}>
-						<OrderHistory />
+						<OrderHistory transactions={transactions} />
 					</Grid>
 				</Grid>
 			</Box>

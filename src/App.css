@@ -1,1 +1,10 @@
 @import "tailwindcss";
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300..700&display=swap');
+
+/* src/fonts.css */
+@font-face {
+    font-family: 'designer'; /* Choose a descriptive name */
+    src: url('../src/assets/fonts/designer_2/Designer.otf') format('opentype'); /* Adjust path and filename */
+    font-weight: normal; /* Or specify other weights if available */
+    font-style: normal; /* Or specify other styles if available */
+}

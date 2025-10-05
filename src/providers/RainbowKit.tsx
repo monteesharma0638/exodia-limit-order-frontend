@@ -5,12 +5,9 @@ import {
 } from '@rainbow-me/rainbowkit';
 import { WagmiProvider } from 'wagmi';
 import {
-  mainnet,
-  polygon,
-  optimism,
-  arbitrum,
-  base,
+  bsc,
   localhost,
+  abstract,
 } from 'wagmi/chains';
 import {
   QueryClientProvider,
@@ -22,7 +19,7 @@ import type { PropsWithChildren } from 'react';
 export const config = getDefaultConfig({
   appName: 'EXODIA - limit orders',
   projectId: '54a7e6f3af9480ebfbdf4c23acde5231',
-  chains: [mainnet, polygon, optimism, arbitrum, base, localhost],
+  chains: [abstract, bsc, localhost],
   ssr: true, // If your dApp uses server side rendering (SSR)
 });
 
